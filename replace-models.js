@@ -112,7 +112,7 @@ const replaceHunters = (innerCall = false) => {
         handleArgs();
     }
 
-    replaceHuntersRecurs(originalData);
+    originalData = replaceHuntersRecurs(originalData);
 
     if (!innerCall) {
         saveOriginalFile();;
@@ -142,6 +142,8 @@ const replaceHunter = (hunter) => {
     } else {
         output('no match found for ' + hunter.Nickname, consoleColors.fgRed);
     }
+
+    return hunter;
 };
 
 /**
@@ -150,30 +152,21 @@ const replaceHunter = (hunter) => {
  * @returns 
  */
 const replaceHuntersRecurs = (obj) => {
-    let hunters = [];
-
     if (isDefined(obj) && 'Description' in obj && obj.Description === 'Hunter') {
-        hunters.push(obj);
-        replaceHunter(obj);
+        obj = replaceHunter(obj);
     }
     
     for (let prop in obj) {
         if (typeof obj[prop] == 'object'){
-            let match = replaceHuntersRecurs(obj[prop]);
-            if (match !== null) {
-                hunters = hunters.concat(match);
-            }
+            obj[prop] = replaceHuntersRecurs(obj[prop]);
         } else if (Array.isArray(obj[prop])) {
-            obj[prop].map((subObj) => {
-                let match = replaceHuntersRecurs(subObj);
-                if (match !== null) {
-                    hunters = hunters.concat(match);
-                }
+            obj[prop].map((subObj, i) => {
+                obj[prop][i] = replaceHuntersRecurs(subObj);
             });
         }
     }
 
-    return hunters;
+    return obj;
 };
 
 /**
