@@ -3,3 +3,5 @@ NodeJS module to replace the models/assets of a Tabletop Simulator's Bloodborne 
 
 ## Run
 `node -e "require('./replace-models').replaceAll()" original-file-name-without-extention replacement-file-name-without-extention`
+
+example files are included in repo
