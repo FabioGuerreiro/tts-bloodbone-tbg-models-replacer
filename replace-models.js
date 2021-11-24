@@ -1,4 +1,10 @@
 const fs = require('fs');
+const readline = require("readline");
+
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 
 const consoleColors = {
     reset: "\x1b[0m",
@@ -19,6 +25,8 @@ let originalData;
 let replaceFile;
 let replaceFileSize;
 let replaceData;
+
+let resizeValue;
 
 /**
  * outputs text to consle/terminal in selected color (defaults to cyan)
@@ -67,40 +75,43 @@ const saveOriginalFile = () => {
 };
 
 /**
- * Handles file name arguments if provided
+ * Handles files names arguments if provided
  */
-const handleArgs = () => {
-    if (isDefined(process.argv[1]) && isDefined(process.argv[2])) {
-        // args for both file names was provided
-        originalFile = process.argv[1].toString() + '.json';
-        replaceFile = process.argv[2].toString() + '.json';
+const handleReplaceArgs = (callback) => {
+    rl.question('name of original json file (without extension): ', function(of) {
+        rl.question('name of replacement json file (without extension): ', function(rf) {
+            originalFile = `${of}.json`;
+            replaceFile = `${rf}.json`;
 
-        originalData = JSON.parse(fs.readFileSync(originalFile));
-        replaceData = JSON.parse(fs.readFileSync(replaceFile));
+            originalData = JSON.parse(fs.readFileSync(originalFile));
+            replaceData = JSON.parse(fs.readFileSync(replaceFile));
 
-        originalFileSize = getFilesize(originalFile);
-        replaceFileSize = getFilesize(replaceFile);
+            originalFileSize = getFilesize(originalFile);
+            replaceFileSize = getFilesize(replaceFile);
 
-        output('originalFile: ' + originalFile + '(' + originalFileSize + 'MB)');
-        output('replaceFile: ' + replaceFile + '(' + replaceFileSize + 'MB)');
-    }
-    
-    if (!isDefined(originalData) || !isDefined(replaceData)) {
-        output('the names of original and replacement files must be provided as arguments', consoleColors.fgRed);
-        throw('aborting...');
-    }
+            output(`originalFile: ${originalFile} (${originalFileSize}MB)`);
+            output(`replaceFile: ${replaceFile} (${replaceFileSize}MB)`);
+
+            callback();
+
+            rl.close();
+        });
+    });
 };
 
 /**
  * Try to replace all replaceable models
  */
 const replaceAll = () => {
-    handleArgs();
 
-    // find and replace all hunters
-    replaceHunters(true);
-    
-    saveOriginalFile();
+    const callback = () => {
+        // find and replace all hunters
+        replaceHunters(true);
+        
+        saveOriginalFile();
+    };
+
+    handleReplaceArgs(callback);
 };
 
 /**
@@ -109,13 +120,13 @@ const replaceAll = () => {
  */
 const replaceHunters = (innerCall = false) => {
     if (!innerCall) {
-        handleArgs();
-    }
-
-    originalData = replaceHuntersRecurs(originalData);
-
-    if (!innerCall) {
-        saveOriginalFile();;
+        const callback = () => {
+            originalData = replaceHuntersRecurs(originalData);
+            saveOriginalFile();
+        };
+        handleReplaceArgs(callback);
+    } else {
+        originalData = replaceHuntersRecurs(originalData);
     }
 };
 
@@ -124,13 +135,13 @@ const replaceHunters = (innerCall = false) => {
  * @param {object} hunter 
  */
 const replaceHunter = (hunter) => {
-    output('Replacing Hunter: ' + hunter.Nickname, consoleColors.fgYellow);
+    output(`Replacing Hunter: ${hunter.Nickname}`, consoleColors.fgYellow);
 
     const hunterCopy = JSON.parse(JSON.stringify(hunter));
     let match = findMatch(replaceData, hunter.Nickname);
 
     if (isDefined(match)) {
-        output('match found for ' + hunter.Nickname, consoleColors.fgGreen);
+        output(`match found for ${hunter.Nickname}`, consoleColors.fgGreen);
         // replace hunter with match
         hunter = match;
         // use orignal hunter values for the next keys, these are to maintain the scripted stuff working
@@ -140,7 +151,7 @@ const replaceHunter = (hunter) => {
         hunter.LuaScriptState = hunterCopy.LuaScriptState;
         hunter.CustomUIAssets = hunterCopy.CustomUIAssets;
     } else {
-        output('no match found for ' + hunter.Nickname, consoleColors.fgRed);
+        output(`no match found for ${hunter.Nickname}`, consoleColors.fgRed);
     }
 
     return hunter;
@@ -202,7 +213,81 @@ const findMatch = (obj, nickname, description = null) => {
     return match;
 }
 
+/**
+ * Handles file name and resize value arguments.
+ */
+ const handleResizeArgs = (callback) => {
+    rl.question(`name of json file (without extension): `, function(of) {
+        rl.question(`resize value (use negative value to shrink): `, function(rv) {
+            originalFile = `${of}.json`;
+            originalData = JSON.parse(fs.readFileSync(originalFile));
+            originalFileSize = getFilesize(originalFile);
+            output(`originalFile: ${originalFile} (${originalFileSize}MB)`);
+
+            if (!isNaN(rv)) {
+                resizeValue = rv;
+                output(`resizeValue: ${resizeValue}`);
+            }
+
+            callback();
+
+            rl.close();
+        });
+    });
+};
+
+/**
+ * Resizes all hunters.
+ */
+const resizeHunters = () => {
+    const callback = () => {
+        originalData = resizeHuntersRecurs(originalData);
+        
+        saveOriginalFile();
+    };
+
+    handleResizeArgs(callback);
+}
+
+/**
+ * get all hunters existing in provided object
+ * @param {object} obj 
+ * @returns 
+ */
+ const resizeHuntersRecurs = (obj) => {
+    if (isDefined(obj) && 'Description' in obj && obj.Description === 'Hunter') {
+        obj = resizeModel(obj, 'Hunter');
+    }
+    
+    for (let prop in obj) {
+        if (typeof obj[prop] == 'object'){
+            obj[prop] = resizeHuntersRecurs(obj[prop]);
+        } else if (Array.isArray(obj[prop])) {
+            obj[prop].map((subObj, i) => {
+                obj[prop][i] = resizeHuntersRecurs(subObj);
+            });
+        }
+    }
+
+    return obj;
+};
+
+const resizeModel = (obj, model = 'Model') => {
+    output(`Resizing ${model}: ${obj.Nickname}`, consoleColors.fgYellow);
+
+    output(`original scaleX ${obj.Transform.scaleX} + ${resizeValue}`);
+    obj.Transform.scaleX = (Number.parseFloat(obj.Transform.scaleX) + Number.parseFloat(resizeValue)).toString();
+    output(`new scaleX ${obj.Transform.scaleX}`);
+    obj.Transform.scaleY = (Number.parseFloat(obj.Transform.scaleY) + Number.parseFloat(resizeValue)).toString();
+    obj.Transform.scaleZ = (Number.parseFloat(obj.Transform.scaleZ) + Number.parseFloat(resizeValue)).toString();
+
+    output(`sucessfull resize of ${obj.Nickname}`, consoleColors.fgGreen);
+
+    return obj;
+};
+
 module.exports = {
     replaceAll,
-    replaceHunters
+    replaceHunters,
+    resizeHunters
 }
