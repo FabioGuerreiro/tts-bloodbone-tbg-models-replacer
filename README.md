@@ -1,5 +1,5 @@
 # tts-bloodborne-tbg
-This was originaly just a script to replace the models in one Mod with the ones from a different one. But it ended up becoming the repo for an implementation of a <font color="red">Bloodborne: The Board Game</font> Mod.
+This was originaly just a script to replace the models in one Mod with the ones from a different one. But it ended up becoming the repo for an implementation of a Tabletop Simulator <font color="red">Bloodborne: The Board Game</font> Mod.
 
 ## TTS Lua
 Folder <font color="cyan">TTS Lua</font> contains the lua scripts to automate actions of the Mod.
