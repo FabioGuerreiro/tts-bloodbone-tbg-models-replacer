@@ -20,10 +20,10 @@ If you want to help by contributing to the project, please ensure you have the f
 
 Once you have your tools ready, follow these guidelines to get started:
 
-1. Subscribe to the Codenames workshop mod.
+1. Subscribe to [Bloodborne: The Board Game \[Scripted\] \[\[re-mastered\]\]](https://steamcommunity.com/sharedfiles/filedetails/?id=2663238812) mod.
 1. Start Tabletop Simulator.
 1. On TTS, Create a new server.
-1. Load the workshop mod (Games > Workshop > Codenames).
+1. Load the workshop mod (Games > Workshop > Bloodborne: The Board Game \[Scripted\] \[\[re-mastered\]\]).
 1. Open up VS Code (or Atom).
 1. Use `Ctrl + ALT + L` key combination to get LUA scripts from the running game. (`Ctrl + Shift + L` on Atom).
 1. Clone this repository.
