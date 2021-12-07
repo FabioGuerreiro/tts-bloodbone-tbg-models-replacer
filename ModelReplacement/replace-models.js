@@ -444,7 +444,7 @@ const resizeHunters = (innerCall = false) => {
  */
  const resizeFiendsRecurs = (obj) => {
     if (isDefined(obj) && 'Name' in obj && 'Nickname' in obj && fiendList.includes(obj.Nickname) && (obj.Name === 'Custom_Model' || obj.Name === 'Figurine_Custom')) {
-        obj = resizeModel(obj, 'Hunter');
+        obj = resizeModel(obj);
     }
     
     for (let prop in obj) {
@@ -467,7 +467,11 @@ const resizeHunters = (innerCall = false) => {
 const resizeModel = (obj, model = 'Model') => {
     output(`Resizing ${model}: ${obj.Nickname}`, consoleColors.fgYellow);
 
-    if (Number.parseFloat(Number.parseFloat(obj.Transform.scaleX)) < 6) {
+    if (Number.parseFloat(obj.Transform.scaleX) >= 5 && resizeValue > 0) {
+        output(`size is already large ${obj.Nickname}`, consoleColors.fgMagenta);
+    } else if (Number.parseFloat(obj.Transform.scaleX) <= 1 && resizeValue < 0) {
+        output(`size is already small ${obj.Nickname}`, consoleColors.fgMagenta);
+    } else {
         output(`original scaleX ${obj.Transform.scaleX} + ${resizeValue}`);
         obj.Transform.scaleX = (Number.parseFloat(obj.Transform.scaleX) + Number.parseFloat(resizeValue)).toString();
         output(`new scaleX ${obj.Transform.scaleX}`);
@@ -475,9 +479,7 @@ const resizeModel = (obj, model = 'Model') => {
         obj.Transform.scaleZ = (Number.parseFloat(obj.Transform.scaleZ) + Number.parseFloat(resizeValue)).toString();
 
         output(`sucessfull resize of ${obj.Nickname}`, consoleColors.fgGreen);
-    } else {
-        output(`size is already large ${obj.Nickname}`, consoleColors.fgMagenta);
-    }
+    } 
 
     return obj;
 };

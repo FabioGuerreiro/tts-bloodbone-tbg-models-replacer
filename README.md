@@ -27,7 +27,7 @@ Once you have your tools ready, follow these guidelines to get started:
 1. Open up VS Code (or Atom).
 1. Use `Ctrl + ALT + L` key combination to get LUA scripts from the running game. (`Ctrl + Shift + L` on Atom).
 1. Clone this repository.
-1. Copy the contents of the files from TTS Lua folder and paste them on your corresponding local instance.
+1. Copy the contents of the files from TTSLua folder and paste them on your corresponding local instance.
 1. Apply any changes to your loading game using `Ctrl + Alt + S`. (`Ctrl + Shift + S` on Atom).
 
 
