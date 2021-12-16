@@ -1,6 +1,7 @@
 require("vscode/console")
 
 -- Loading all unique zones and hunt board
+start_zone_GUID = '1fb04c'
 campaign_start_zone_GUID = 'a8429c'
 hunt_board_GUID = '66b398'
 enemies_zone_GUID = '1af64d'
@@ -54,8 +55,9 @@ chapter_deck = nil
 map_tiles = nil
 random_monster_bag = nil
 
-campaigns = {
-  ["The Long Hunt"] = {
+function set_campaign_decks ()
+  campaigns = {
+    ["The Long Hunt"] = {
       {
         enemies = {"Hunter Mob", "Huntsman's Minion", "Scourge Beast"},
         starting_tile = "Central Lamp",
@@ -368,7 +370,7 @@ campaigns = {
       }
     }
   }
-
+end
 
 campaign_button_parameters = {
   click_function = 'load_campaign',
@@ -410,15 +412,38 @@ next_chapter_button_parameters = {
   click_function = 'next_chapter',
   function_owner = nil,
   label = 'Next Chapter',
-  position = {-0.6, -0.3, 2},
-  width = 500,
-  height = 100,
-  font_size = 70,
+  position = {-0.5,-0.5,0},
+  rotation = {0,180,0},
+  scale = {1,1,1},
+  width = 700,
+  height = 170,
+  font_size = 100
+}
+
+start_button_parameters = {
+  click_function = 'init_all_campaingns',
+  function_owner = nil,
+  label = 'Start',
+  position = {-0.5,-0.5,0},
+  rotation = {0,180,0},
+  scale = {1,1,1},
+  width = 350,
+  height = 170,
+  font_size = 100
 }
 
 function onLoad(save_state)
+  zone = getObjectFromGUID(start_zone_GUID)
+  zone.createButton(start_button_parameters)
+end
+
+function init_all_campaingns()
+  zone.clearButtons()
+
+  set_campaign_decks()
   add_campaign_buttons()
   add_mission_buttons()
+  
   o = getObjectFromGUID(enemy_action_deck_zone_GUID)
   o.createButton(enemy_action_button_parameters)
 end
@@ -549,7 +574,9 @@ function load_campaign(c)
   --Wait 2.5s for animations to finish
   Wait.time(init_campaign,2.5)
   Wait.time(initialize_decks,5)
-  hunt_board.createButton(next_chapter_button_parameters)
+
+  zone = getObjectFromGUID(start_zone_GUID)
+  zone.createButton(next_chapter_button_parameters)
 end
 
 function select_enemies(cmpn)
@@ -622,13 +649,14 @@ function init_campaign()
       break
     end
   end
+  
   intro_card = chapter_deck.takeObject({position={-18.25,11,-99},flip=true})
   chapter_card = chapter_deck.takeObject({position=chapter_deck.getPosition(),flip=true})
-  log(campaigns[chapter_deck.getName()])
+  -- log(campaigns[chapter_deck.getName()])
   campaign = campaigns[chapter_deck.getName()]
   chapter = 1
-  log(campaign)
-  start_campaign(chapter_deck, campaign[1])
+
+  start_campaign(chapter_deck, campaign)
   return true
 end
 
@@ -799,8 +827,13 @@ function flip_enemy_action_card(a)
   end
 end
 
-function start_campaign(deck, params)
-  log(params)
+function start_campaign(deck, campaign)
+  params = campaign[chapter];
+
+  if campaign[chapter + 1] ~= nil then
+    campaign["next_chapter"] = chapter + 1;
+  end
+
   hunt_board = getObjectFromGUID(hunt_board_GUID)
   local cards = deck.getObjects()
   hunt_cards = {}
