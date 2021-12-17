@@ -1,7 +1,8 @@
 require("vscode/console")
 
 -- Loading all unique zones and hunt board
-start_zone_GUID = '1fb04c'
+big_play_area_GUID = '0ad353'
+start_zone_GUID = 'c4d0fd'
 campaign_start_zone_GUID = 'a8429c'
 hunt_board_GUID = '66b398'
 enemies_zone_GUID = '1af64d'
@@ -45,15 +46,25 @@ forbidden_woods_GUID = '3cda53'
 forsaken_legacy_GUID = '37a760'
 the_hunts_end_GUID = '19437c'
 
+-- GUIDs to hunters dashboards
+red_hunter_zone_GUID = "5789d8"
+blue_hunter_zone_GUID = "b6e10c"
+purple_hunter_zone_GUID = "cffe86"
+green_hunter_zone_GUID = "c66ed7"
+
+
 -- useful locations
 hunt_mission_location = {-18.4,11,-62}
 enemy_one_location = {21.73,10.46,-64.21}
 
+campaign_bag = nil
 campaign = nil
 chapter = nil
 chapter_deck = nil
 map_tiles = nil
 random_monster_bag = nil
+
+campaign_buttons_position_initial = true
 
 function set_campaign_decks ()
   campaigns = {
@@ -433,6 +444,7 @@ start_button_parameters = {
 }
 
 function onLoad(save_state)
+  broadcastToAll("When all players are seated and have selected their Hunters click \"Start\"")
   zone = getObjectFromGUID(start_zone_GUID)
   zone.createButton(start_button_parameters)
 end
@@ -449,83 +461,87 @@ function init_all_campaingns()
 end
 
 function next_chapter(x)
-  if campaign["next_chapter"] == nil then
+  if campaign[chapter + 1] == nil then
+    chapter = nil
     return false
   else
     chapter = chapter + 1
   end
-  log("Starting next Chapter...")
-  chapter_deck_zone = getObjectFromGUID(chapter_deck_zone_GUID)
-  the_box = getObjectFromGUID(the_box_GUID)
-  map_tiles_zone = getObjectFromGUID(map_tiles_zone_GUID)
-  map_tiles = {}
 
-  zone = getObjectFromGUID(enemies_zone_GUID)
-  random_monster_zone = getObjectFromGUID(random_monster_zone_GUID)
-  for _,o in ipairs(zone.getObjects()) do
-    if o.getName() != "Hunt Board" and (o.tag == "Card" or o.tag == "Deck") then
-      o.setPosition(the_box.getPosition())
-      --bag = spawnObject({type = "Bag", sound = false})
-      for _,b in ipairs(random_monster_zone.getObjects()) do
-        if b.tag == "Infinite" then
-          b.setPosition(the_box.getPosition())
-        end
-      end
-    end
-  end
-  --random_monster_bag.setPosition(random_monster_zone.getPosition())
-  for _,o in ipairs(map_tiles_zone.getObjects()) do
-    if o.tag == "Deck" then
-      map_tiles = o
-    end
-  end
-  for _,o in ipairs(chapter_deck_zone.getObjects()) do
-    if o.tag == "Card" and o.getName() != "Hunt Board" then
-      the_box.putObject(o)
-    end
-  end
-  for _,z in ipairs({extra_tiles_zone_GUID,playing_zone_GUID}) do
-    zone = getObjectFromGUID(z)
-    for _,o in ipairs(zone.getObjects()) do
-      if o.tag == "Card" and o.getName() != "Central Lamp" then
-        o.flip()
-        map_tiles.putObject(o)
-      elseif o.tag == "Deck" then
-        map_tiles.putObject(o)
-      end
-    end
-  end
-  card = chapter_deck.takeObject()
-  card.flip()
-  for _,z in ipairs({mission_discard_zone_GUID,campaign_start_zone_GUID}) do
-    zone = getObjectFromGUID(z)
-    for _,o in ipairs(zone.getObjects()) do
-      if o.tag == "Deck" or o.tag == "Card" then
-        o.setRotation({0,180,0})
-        chapter_deck.putObject(o)
-      end
-    end
-  end
-  zone = getObjectFromGUID(upgrade_shop_zone_GUID)
-  dest = getObjectFromGUID(upgrade_deck_zone_GUID)
-  for _,o in ipairs(zone.getObjects()) do
-    if o.tag == "Card" and o.getName() != "Hunt Board" then
-      o.flip()
-      o.setPosition(dest.getPosition())
-    end
-  end
-  zone = getObjectFromGUID(enemy_action_discard_zone_GUID)
-  dest = getObjectFromGUID(enemy_action_deck_zone_GUID)
-  for _,o in ipairs(zone.getObjects()) do
-    if o.tag == "Card" or o.tag == "Deck" then
-      o.flip()
-      o.setPosition(dest.getPosition())
-    end
-  end
+  load_campaign(campaign_bag)
+  
+  -- log("Starting next Chapter...")
+  -- chapter_deck_zone = getObjectFromGUID(chapter_deck_zone_GUID)
+  -- the_box = getObjectFromGUID(the_box_GUID)
+  -- map_tiles_zone = getObjectFromGUID(map_tiles_zone_GUID)
+  -- map_tiles = {}
 
-  --Wait.time(function() return true; end,2)
-  start_campaign(chapter_deck,campaign)
-  Wait.time(initialize_decks,2.5)
+  -- zone = getObjectFromGUID(enemies_zone_GUID)
+  -- random_monster_zone = getObjectFromGUID(random_monster_zone_GUID)
+  -- for _,o in ipairs(zone.getObjects()) do
+  --   if o.getName() != "Hunt Board" and (o.tag == "Card" or o.tag == "Deck") then
+  --     o.setPosition(the_box.getPosition())
+  --     --bag = spawnObject({type = "Bag", sound = false})
+  --     for _,b in ipairs(random_monster_zone.getObjects()) do
+  --       if b.tag == "Infinite" then
+  --         b.setPosition(the_box.getPosition())
+  --       end
+  --     end
+  --   end
+  -- end
+  -- --random_monster_bag.setPosition(random_monster_zone.getPosition())
+  -- for _,o in ipairs(map_tiles_zone.getObjects()) do
+  --   if o.tag == "Deck" then
+  --     map_tiles = o
+  --   end
+  -- end
+  -- for _,o in ipairs(chapter_deck_zone.getObjects()) do
+  --   if o.tag == "Card" and o.getName() != "Hunt Board" then
+  --     the_box.putObject(o)
+  --   end
+  -- end
+  -- for _,z in ipairs({extra_tiles_zone_GUID,playing_zone_GUID}) do
+  --   zone = getObjectFromGUID(z)
+  --   for _,o in ipairs(zone.getObjects()) do
+  --     if o.tag == "Card" and o.getName() != "Central Lamp" then
+  --       o.flip()
+  --       map_tiles.putObject(o)
+  --     elseif o.tag == "Deck" then
+  --       map_tiles.putObject(o)
+  --     end
+  --   end
+  -- end
+  -- card = chapter_deck.takeObject()
+  -- card.flip()
+  -- for _,z in ipairs({mission_discard_zone_GUID,campaign_start_zone_GUID}) do
+  --   zone = getObjectFromGUID(z)
+  --   for _,o in ipairs(zone.getObjects()) do
+  --     if o.tag == "Deck" or o.tag == "Card" then
+  --       o.setRotation({0,180,0})
+  --       chapter_deck.putObject(o)
+  --     end
+  --   end
+  -- end
+  -- zone = getObjectFromGUID(upgrade_shop_zone_GUID)
+  -- dest = getObjectFromGUID(upgrade_deck_zone_GUID)
+  -- for _,o in ipairs(zone.getObjects()) do
+  --   if o.tag == "Card" and o.getName() != "Hunt Board" then
+  --     o.flip()
+  --     o.setPosition(dest.getPosition())
+  --   end
+  -- end
+  -- zone = getObjectFromGUID(enemy_action_discard_zone_GUID)
+  -- dest = getObjectFromGUID(enemy_action_deck_zone_GUID)
+  -- for _,o in ipairs(zone.getObjects()) do
+  --   if o.tag == "Card" or o.tag == "Deck" then
+  --     o.flip()
+  --     o.setPosition(dest.getPosition())
+  --   end
+  -- end
+
+  -- --Wait.time(function() return true; end,2)
+  -- start_campaign(chapter_deck, campaign)
+  -- Wait.time(initialize_decks,2.5)
 end
 -- Adds buttons to campaigns
 function add_campaign_buttons()
@@ -564,9 +580,15 @@ end
 
 -- Moves campaign bag to Hunt Board, initializes and shuffles decks, calls init_campaign
 function load_campaign(c)
+  campaign_bag = c
+
+  clear_table()
+   
   hunt_board = getObjectFromGUID(hunt_board_GUID)
   --Hide campaigns
-  move_campaign_buttons()
+  if campaign_buttons_position_initial == true then
+    move_campaign_buttons()
+  end
   log("Loading Campaign: "..c.getName())
 
   --Move the bag to the hunt board
@@ -649,12 +671,23 @@ function init_campaign()
       break
     end
   end
+
+  if chapter == nil then
+    chapter = 1
+  end
   
   intro_card = chapter_deck.takeObject({position={-18.25,11,-99},flip=true})
+  
+  if chapter > 1 then
+    for i=1,(chapter - 1) do
+      previous_chapter_card = chapter_deck.takeObject({position={-19.25,11,-99},flip=true})
+    end
+  end
+  
   chapter_card = chapter_deck.takeObject({position=chapter_deck.getPosition(),flip=true})
   -- log(campaigns[chapter_deck.getName()])
   campaign = campaigns[chapter_deck.getName()]
-  chapter = 1
+  
 
   start_campaign(chapter_deck, campaign)
   return true
@@ -667,6 +700,7 @@ function move_campaign_buttons()
   for _,o in ipairs(objs) do
     o.translate({0,0,256})
   end
+  campaign_buttons_position_initial = false
 end
 
 -- Gets releveant decks from bag, shuffles them, and deals them
@@ -830,10 +864,6 @@ end
 function start_campaign(deck, campaign)
   params = campaign[chapter];
 
-  if campaign[chapter + 1] ~= nil then
-    campaign["next_chapter"] = chapter + 1;
-  end
-
   hunt_board = getObjectFromGUID(hunt_board_GUID)
   local cards = deck.getObjects()
   hunt_cards = {}
@@ -881,4 +911,29 @@ function start_campaign(deck, campaign)
   create_map_tiles_deck(params.starting_tile,params.starting_tiles,params.random_tiles,params.excluded_tiles)
   select_enemies(params)
   broadcastToAll(params.introduction, Table)
+end
+
+function clear_table()
+  -- needs to clear all items scattered on the table
+  log("Clearing Table...")
+
+  playArea = getObjectFromGUID(big_play_area_GUID)
+  zoneObjects = playArea.getObjects()
+  for k, obj in pairs(zoneObjects) do
+    if obj.getDescription() == "Hunter" then  
+      log(obj.getColorTint())
+      log(obj.getPosition())
+      hunter_zone = getObjectFromGUID(red_hunter_zone_GUID)
+      hunter = obj.takeObject({position=hunter_zone.getPosition()})
+      -- if obj.getColorTint() == "Red" then
+      --   -- obj.takeObject({position={-65,5,-96.98069}})
+      -- end
+    elseif obj.getLock() ~= true then
+      obj.destruct()
+    end
+    -- log(obj.getName())
+    -- log(obj.getDescription())
+    -- log("------------------------------")
+  end
+
 end
